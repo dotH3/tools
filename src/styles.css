@@ -1,11 +1,3 @@
-/* Tailwind CSS (v4). Se importa sin el "preflight" (reset base) a propósito:
-   los estilos actuales dependen del aspecto nativo de los elementos —botones,
-   márgenes, tablas—, así que solo cargamos el tema y las utilidades para
-   dejar Tailwind disponible sin alterar el diseño existente. */
-@layer theme, base, components, utilities;
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
-
 body {
   font-family: system-ui, sans-serif;
   margin: 0;

@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Conversor de imágenes</title>
+  <!-- Tailwind CSS vía Play CDN (solución temporal mientras el registro npm
+       esté bloqueado y no se pueda instalar @tailwindcss/vite). Se desactiva
+       el preflight para no alterar los estilos actuales, que dependen del
+       aspecto nativo de botones, tablas y márgenes. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { corePlugins: { preflight: false } };
+  </script>
 </head>
 <body>
   <div id="root"></div>
