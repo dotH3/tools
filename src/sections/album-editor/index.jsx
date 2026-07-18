@@ -12,6 +12,13 @@ function isMp3(file) {
   return file.type === 'audio/mpeg' || /\.mp3$/i.test(file.name);
 }
 
+// Número de pista a partir del frame TRCK ("3" o "3/12"). Las pistas sin
+// número quedan al final, conservando su orden relativo (orden estable).
+function trackNumber(value) {
+  const n = parseInt(String(value || '').split('/')[0], 10);
+  return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
+}
+
 // Convierte un cover { mime, bytes } en algo con URL para previsualizar.
 function coverWithUrl(cover) {
   if (!cover) return null;
@@ -58,6 +65,12 @@ export default function AlbumEditor() {
         parsed: tags,
       });
     }
+
+    // Ordenamos el lote por su número de pista embebido para respetar el orden
+    // original del álbum (el navegador entrega los archivos en orden alfabético,
+    // no en el del disco). Los lotes posteriores se anexan al final, de modo que
+    // los bonus tracks añadidos después quedan donde el usuario los pone.
+    loaded.sort((a, b) => trackNumber(a.trackNo) - trackNumber(b.trackNo));
 
     setTracks((prev) => [...prev, ...loaded]);
 
