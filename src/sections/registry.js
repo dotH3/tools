@@ -1,6 +1,7 @@
 import ImageConverter from './image-converter/index.jsx';
 import ImageEditor from './image-editor/index.jsx';
 import CodeEditor from './code-editor/index.jsx';
+import AlbumEditor from './album-editor/index.jsx';
 
 /**
  * Registro central de secciones de la app.
@@ -31,6 +32,11 @@ export const sections = [
     id: 'code-editor',
     label: 'Editor de código',
     component: CodeEditor,
+  },
+  {
+    id: 'album-editor',
+    label: 'Editor de álbumes',
+    component: AlbumEditor,
   },
 ];
 
