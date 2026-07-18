@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="es" class="antialiased">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Editor de imágenes · Tools</title>
+  <meta name="description" content="Editor de imágenes en el navegador con anotaciones movibles." />
+  <link rel="stylesheet" href="./dist/tailwind.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖼️</text></svg>" />
+</head>
+<body class="bg-slate-950 text-slate-200 font-sans h-screen overflow-hidden flex flex-col select-none">
+
+  <!-- ============================ TOP BAR ============================ -->
+  <header class="flex items-center justify-between h-14 px-4 border-b border-slate-800 bg-slate-900 flex-none">
+    <div class="flex items-center gap-3">
+      <a href="./index.html" class="tool-btn" title="Volver">←</a>
+      <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-sm">🖼️</span>
+      <div class="flex flex-col leading-tight">
+        <span class="font-semibold text-slate-100 text-sm">Editor de imágenes</span>
+        <span id="fileName" class="text-xs text-slate-500 truncate max-w-xs">sin imagen</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+      <button id="undoBtn" class="tool-btn" title="Deshacer (Ctrl+Z)" disabled>↶</button>
+      <button id="redoBtn" class="tool-btn" title="Rehacer (Ctrl+Y)" disabled>↷</button>
+      <span class="w-px h-6 bg-slate-800 mx-1"></span>
+      <button id="loadBtn" class="btn btn-ghost border border-slate-700">Cargar</button>
+      <button id="sampleBtn" class="btn btn-ghost border border-slate-700">Ejemplo</button>
+      <button id="exportBtn" class="btn btn-primary" disabled>Exportar PNG</button>
+      <input id="fileInput" type="file" accept="image/*" class="hidden" />
+    </div>
+  </header>
+
+  <!-- ============================ BODY ============================ -->
+  <div class="flex flex-1 min-h-0">
+
+    <!-- -------- LEFT TOOLBAR -------- -->
+    <aside class="flex flex-col items-center gap-1.5 w-16 py-3 border-r border-slate-800 bg-slate-900 flex-none">
+      <button class="tool-btn" data-tool="select" aria-pressed="true" title="Seleccionar / mover (V)">⤢</button>
+      <button class="tool-btn" data-tool="text" title="Texto (T)">T</button>
+      <button class="tool-btn" data-tool="rect" title="Rectángulo (R)">▭</button>
+      <button class="tool-btn" data-tool="ellipse" title="Elipse (O)">◯</button>
+      <button class="tool-btn" data-tool="arrow" title="Flecha (A)">↗</button>
+      <button class="tool-btn" data-tool="draw" title="Dibujo libre (D)">✎</button>
+      <span class="w-8 h-px bg-slate-800 my-1"></span>
+      <button id="duplicateBtn" class="tool-btn" title="Duplicar (Ctrl+D)" disabled>⧉</button>
+      <button id="deleteBtn" class="tool-btn" title="Eliminar (Supr)" disabled>🗑</button>
+    </aside>
+
+    <!-- -------- CANVAS / STAGE -------- -->
+    <main id="viewport" class="relative flex-1 min-w-0 overflow-auto scroll-thin flex items-center justify-center p-8 checkerboard">
+      <!-- empty state -->
+      <div id="emptyState" class="text-center max-w-sm">
+        <div class="mx-auto w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-3xl mb-4">🖼️</div>
+        <h2 class="text-lg font-semibold text-slate-200">Empieza con una imagen</h2>
+        <p class="text-sm text-slate-500 mt-1 mb-5">Arrastra un archivo aquí, cárgalo o prueba con una imagen de ejemplo.</p>
+        <div class="flex items-center justify-center gap-2">
+          <button id="loadBtn2" class="btn btn-primary">Cargar imagen</button>
+          <button id="sampleBtn2" class="btn btn-ghost border border-slate-700">Usar ejemplo</button>
+        </div>
+      </div>
+
+      <!-- stage (holds image + annotation objects) -->
+      <div id="stage" class="relative hidden shadow-2xl origin-center">
+        <img id="baseImage" class="block pointer-events-none select-none" alt="" />
+        <div id="layer" class="absolute inset-0"></div>
+      </div>
+
+      <!-- drop overlay -->
+      <div id="dropOverlay" class="absolute inset-0 hidden items-center justify-center bg-indigo-600 bg-opacity-20 border-2 border-dashed border-indigo-400 z-40 pointer-events-none">
+        <span class="text-indigo-100 font-medium text-lg">Suelta la imagen aquí</span>
+      </div>
+    </main>
+
+    <!-- -------- RIGHT PANEL -------- -->
+    <aside class="w-72 flex-none border-l border-slate-800 bg-slate-900 overflow-y-auto scroll-thin">
+
+      <!-- element properties (contextual) -->
+      <section id="elementPanel" class="hidden p-4 border-b border-slate-800">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">Elemento</h3>
+
+        <div class="space-y-4">
+          <!-- color -->
+          <div class="flex items-center justify-between">
+            <label class="text-sm text-slate-300">Color</label>
+            <input id="propColor" type="color" value="#f43f5e" class="w-9 h-8 rounded bg-transparent cursor-pointer" />
+          </div>
+
+          <!-- fill (shapes) -->
+          <div id="fillRow" class="flex items-center justify-between">
+            <label class="text-sm text-slate-300">Relleno</label>
+            <button id="propFill" class="btn btn-ghost border border-slate-700 text-xs" data-on="false">Ninguno</button>
+          </div>
+
+          <!-- stroke width -->
+          <div id="strokeRow">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm text-slate-300">Grosor</label>
+              <span id="strokeVal" class="text-xs text-slate-500">3 px</span>
+            </div>
+            <input id="propStroke" type="range" min="1" max="40" value="3" class="range" />
+          </div>
+
+          <!-- font size (text) -->
+          <div id="fontRow" class="hidden">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm text-slate-300">Tamaño de texto</label>
+              <span id="fontVal" class="text-xs text-slate-500">32 px</span>
+            </div>
+            <input id="propFont" type="range" min="10" max="160" value="32" class="range" />
+          </div>
+
+          <!-- opacity -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm text-slate-300">Opacidad</label>
+              <span id="opacityVal" class="text-xs text-slate-500">100%</span>
+            </div>
+            <input id="propOpacity" type="range" min="10" max="100" value="100" class="range" />
+          </div>
+
+          <!-- z-order -->
+          <div class="flex items-center gap-2 pt-1">
+            <button id="forwardBtn" class="btn btn-ghost border border-slate-700 flex-1 text-xs">Traer ↑</button>
+            <button id="backwardBtn" class="btn btn-ghost border border-slate-700 flex-1 text-xs">Enviar ↓</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- hint when nothing selected -->
+      <section id="hintPanel" class="p-4 border-b border-slate-800">
+        <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Elemento</h3>
+        <p class="text-sm text-slate-500 leading-relaxed">
+          Elige una herramienta y dibuja sobre la imagen. Con <span class="text-slate-300">Seleccionar</span> puedes
+          <span class="text-indigo-300">mover</span> y redimensionar cualquier anotación.
+        </p>
+      </section>
+
+      <!-- image adjustments -->
+      <section class="p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ajustes de imagen</h3>
+          <button id="resetFilters" class="text-xs text-indigo-400 hover:text-indigo-300">Restablecer</button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm text-slate-300">Brillo</label>
+              <span data-out="brightness" class="text-xs text-slate-500">100%</span>
+            </div>
+            <input class="range" type="range" data-filter="brightness" min="0" max="200" value="100" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm text-slate-300">Contraste</label>
+              <span data-out="contrast" class="text-xs text-slate-500">100%</span>
+            </div>
+            <input class="range" type="range" data-filter="contrast" min="0" max="200" value="100" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm text-slate-300">Saturación</label>
+              <span data-out="saturate" class="text-xs text-slate-500">100%</span>
+            </div>
+            <input class="range" type="range" data-filter="saturate" min="0" max="200" value="100" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm text-slate-300">Desenfoque</label>
+              <span data-out="blur" class="text-xs text-slate-500">0 px</span>
+            </div>
+            <input class="range" type="range" data-filter="blur" min="0" max="20" value="0" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-sm text-slate-300">Escala de grises</label>
+              <span data-out="grayscale" class="text-xs text-slate-500">0%</span>
+            </div>
+            <input class="range" type="range" data-filter="grayscale" min="0" max="100" value="0" />
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <script src="./js/image-editor.js"></script>
+</body>
+</html>
