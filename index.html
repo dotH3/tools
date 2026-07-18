@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es" class="antialiased">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tools · Colección de herramientas</title>
+  <meta name="description" content="Una pequeña colección de herramientas web, estilizadas con Tailwind CSS." />
+  <link rel="stylesheet" href="./dist/tailwind.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧰</text></svg>" />
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen font-sans">
+
+  <!-- top bar -->
+  <header class="border-b border-slate-800 bg-slate-900">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-lg shadow-lg">🧰</span>
+        <div class="flex flex-col">
+          <span class="font-semibold text-slate-100 leading-tight">Tools</span>
+          <span class="text-xs text-slate-500 leading-tight">colección de utilidades</span>
+        </div>
+      </div>
+      <nav class="flex items-center gap-2 text-sm">
+        <a href="#tools" class="btn btn-ghost">Herramientas</a>
+        <a href="./image-editor.html" class="btn btn-primary">Abrir editor</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- hero -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 to-slate-950 opacity-20"></div>
+    <div class="relative max-w-6xl mx-auto px-6 py-20 md:py-28">
+      <p class="inline-flex items-center gap-2 text-xs font-medium tracking-wide uppercase text-indigo-300 bg-indigo-500 bg-opacity-10 rounded-full px-3 py-1 mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+        Estilizado con Tailwind
+      </p>
+      <h1 class="text-4xl md:text-6xl font-extrabold text-slate-50 tracking-tight leading-none max-w-3xl">
+        Herramientas rápidas,
+        <span class="bg-gradient-to-r from-indigo-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">directo en el navegador.</span>
+      </h1>
+      <p class="mt-6 text-lg text-slate-400 max-w-xl leading-relaxed">
+        Sin instalaciones ni cuentas. Todo corre localmente en tu navegador — tus archivos nunca salen de tu equipo.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="./image-editor.html" class="btn btn-primary text-base px-5 py-3">
+          🖼️ Editor de imágenes
+        </a>
+        <a href="#tools" class="btn btn-ghost text-base px-5 py-3 border border-slate-700">
+          Ver todas
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- tools grid -->
+  <section id="tools" class="max-w-6xl mx-auto px-6 py-16">
+    <div class="flex items-end justify-between mb-8">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-100">Herramientas</h2>
+        <p class="text-slate-500 mt-1">Elige una para empezar.</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <!-- image editor card -->
+      <a href="./image-editor.html"
+         class="group relative flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-6 transition-colors hover:border-indigo-500">
+        <span class="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500 bg-opacity-15 text-2xl mb-4">🖼️</span>
+        <h3 class="text-lg font-semibold text-slate-100">Editor de imágenes</h3>
+        <p class="mt-2 text-sm text-slate-400 leading-relaxed flex-1">
+          Recorta, anota y ajusta imágenes. Añade texto y formas que puedes mover libremente después de crearlas.
+        </p>
+        <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-indigo-400">
+          Abrir <span class="transition-transform group-hover:translate-x-1">→</span>
+        </span>
+      </a>
+
+      <!-- placeholder cards -->
+      <div class="flex flex-col rounded-2xl border border-dashed border-slate-800 bg-slate-900 bg-opacity-40 p-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-800 text-2xl mb-4">🎨</span>
+        <h3 class="text-lg font-semibold text-slate-300">Paleta de color</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed flex-1">Extrae y ajusta paletas desde una imagen.</p>
+        <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-slate-600">Próximamente</span>
+      </div>
+
+      <div class="flex flex-col rounded-2xl border border-dashed border-slate-800 bg-slate-900 bg-opacity-40 p-6">
+        <span class="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-800 text-2xl mb-4">📐</span>
+        <h3 class="text-lg font-semibold text-slate-300">Conversor de unidades</h3>
+        <p class="mt-2 text-sm text-slate-500 leading-relaxed flex-1">px, rem, em y más, al instante.</p>
+        <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-slate-600">Próximamente</span>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-slate-800 mt-10">
+    <div class="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-slate-500">
+      <span>Tools · construido con Tailwind CSS</span>
+      <span>Todo se procesa localmente en tu navegador.</span>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,80 @@
+/*
+ * Tailwind entry point.
+ *
+ * In a standard Tailwind project this file starts with the three @tailwind
+ * directives. The local generator (scripts/generate-tailwind.js) strips those
+ * directives and appends whatever custom component/utility CSS lives below to
+ * the compiled output. Author reusable component classes here.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- reusable component classes ---------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.875rem;
+  transition: background-color 150ms, color 150ms, box-shadow 150ms, transform 150ms;
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-primary { background-color: #6366f1; color: #fff; }
+.btn-primary:hover:not(:disabled) { background-color: #4f46e5; }
+
+.btn-ghost { background-color: transparent; color: #cbd5e1; }
+.btn-ghost:hover:not(:disabled) { background-color: rgba(148, 163, 184, 0.12); color: #f1f5f9; }
+
+.btn-danger { background-color: rgba(239, 68, 68, 0.12); color: #fca5a5; }
+.btn-danger:hover:not(:disabled) { background-color: rgba(239, 68, 68, 0.2); color: #fecaca; }
+
+/* Tool icon button used across the editor toolbar */
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.625rem;
+  color: #94a3b8;
+  background-color: transparent;
+  transition: background-color 150ms, color 150ms;
+}
+.tool-btn:hover { background-color: rgba(148, 163, 184, 0.12); color: #e2e8f0; }
+.tool-btn[aria-pressed='true'] {
+  background-color: rgba(99, 102, 241, 0.18);
+  color: #a5b4fc;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.5);
+}
+
+/* Thin custom scrollbars for panels */
+.scroll-thin::-webkit-scrollbar { width: 10px; height: 10px; }
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); background-clip: content-box; }
+
+/* Checkerboard so transparent images read clearly in the editor */
+.checkerboard {
+  background-image:
+    linear-gradient(45deg, #1e293b 25%, transparent 25%),
+    linear-gradient(-45deg, #1e293b 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1e293b 75%),
+    linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-color: #0f172a;
+}
