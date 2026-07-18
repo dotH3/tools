@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useDragReorder } from './useDragReorder.js';
 import TrackRow from './TrackRow.jsx';
 import { readTags, writeTags } from './id3.js';
 import { renderName, extensionOf, PRESETS } from './template.js';
@@ -26,6 +27,8 @@ export default function AlbumEditor() {
   const [zipping, setZipping] = useState(false);
   const fileRef = useRef(null);
   const coverRef = useRef(null);
+  const listRef = useRef(null);
+  const { draggingId, dragHandleProps } = useDragReorder(listRef, tracks, setTracks);
 
   // Liberamos el object URL de la carátula al reemplazarla o al desmontar.
   useEffect(() => {
@@ -75,17 +78,6 @@ export default function AlbumEditor() {
 
   function updateTrack(id, patch) {
     setTracks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
-  }
-
-  function moveTrack(id, dir) {
-    setTracks((prev) => {
-      const i = prev.findIndex((t) => t.id === id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= prev.length) return prev;
-      const next = prev.slice();
-      [next[i], next[j]] = [next[j], next[i]];
-      return next;
-    });
   }
 
   function removeTrack(id) {
@@ -265,16 +257,16 @@ export default function AlbumEditor() {
           </div>
 
           {/* Lista de pistas */}
-          <div className="track-list">
+          <div className="track-list" ref={listRef}>
             {tracks.map((track, index) => (
               <TrackRow
                 key={track.id}
                 track={track}
                 index={index}
-                total={tracks.length}
                 previewName={nameFor(track, index)}
+                dragging={draggingId === track.id}
+                dragHandleProps={dragHandleProps(track.id)}
                 onChange={updateTrack}
-                onMove={moveTrack}
                 onRemove={removeTrack}
                 onDownload={downloadTrack}
               />

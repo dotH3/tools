@@ -634,6 +634,19 @@ td {
   background: #fcfcfd;
 }
 
+.track-item.dragging {
+  background: #eff6ff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+  border-radius: 8px;
+  position: relative;
+  z-index: 2;
+  cursor: grabbing;
+}
+
+.track-item.dragging .track-num {
+  color: #2563eb;
+}
+
 .track-main {
   display: flex;
   gap: 12px;
@@ -644,7 +657,7 @@ td {
 .track-order {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .track-num {
@@ -655,10 +668,28 @@ td {
   font-size: 0.9rem;
 }
 
-.track-move {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #b0b6be;
+  cursor: grab;
+  touch-action: none; /* el toque arrastra, no hace scroll */
+}
+
+.drag-handle:hover {
+  background: #eef0f3;
+  color: #6b7280;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .track-fields {
@@ -727,12 +758,6 @@ td {
   color: #dc2626;
   border-color: #fecaca;
   background: #fef2f2;
-}
-
-.track-move .mini-btn {
-  height: 18px;
-  min-width: 26px;
-  padding: 0;
 }
 
 .primary-btn {
