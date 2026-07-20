@@ -32,9 +32,14 @@ export default function AlbumEditor() {
   const [template, setTemplate] = useState('{n} - {title}');
   const [renumber, setRenumber] = useState(true);
   const [zipping, setZipping] = useState(false);
+  const [playingId, setPlayingId] = useState(null);
   const fileRef = useRef(null);
   const coverRef = useRef(null);
   const listRef = useRef(null);
+  // Un único <audio> compartido reproduce la preview: así solo suena una pista a
+  // la vez y reutilizamos un object URL que liberamos al cambiar de pista.
+  const audioRef = useRef(null);
+  const previewUrlRef = useRef(null);
   const { draggingId, dragHandleProps } = useDragReorder(listRef, tracks, setTracks);
 
   // Liberamos el object URL de la carátula al reemplazarla o al desmontar.
@@ -43,6 +48,46 @@ export default function AlbumEditor() {
       if (album.cover && album.cover.url) URL.revokeObjectURL(album.cover.url);
     };
   }, [album.cover]);
+
+  // Al desmontar, liberamos el object URL de la preview en curso.
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
+
+  // Detiene la preview y libera su object URL. Se usa al terminar la pista, al
+  // quitarla de la lista o al vaciar el álbum.
+  function stopPreview() {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPlayingId(null);
+  }
+
+  // Reproduce/pausa la preview de una pista. Si ya sonaba, la pausa; si no,
+  // apunta el <audio> compartido al MP3 original y lo reproduce.
+  function togglePreview(track) {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playingId === track.id) {
+      audio.pause();
+      setPlayingId(null);
+      return;
+    }
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = URL.createObjectURL(track.file);
+    audio.src = previewUrlRef.current;
+    setPlayingId(track.id);
+    audio.play().catch(() => setPlayingId(null));
+  }
 
   const hasTracks = tracks.length > 0;
 
@@ -94,6 +139,7 @@ export default function AlbumEditor() {
   }
 
   function removeTrack(id) {
+    if (playingId === id) stopPreview();
     setTracks((prev) => prev.filter((t) => t.id !== id));
   }
 
@@ -160,6 +206,7 @@ export default function AlbumEditor() {
   }
 
   function clearAll() {
+    stopPreview();
     if (album.cover && album.cover.url) URL.revokeObjectURL(album.cover.url);
     setTracks([]);
     setAlbum(EMPTY_ALBUM);
@@ -277,11 +324,13 @@ export default function AlbumEditor() {
                 track={track}
                 index={index}
                 previewName={nameFor(track, index)}
+                playing={playingId === track.id}
                 dragging={draggingId === track.id}
                 dragHandleProps={dragHandleProps(track.id)}
                 onChange={updateTrack}
                 onRemove={removeTrack}
                 onDownload={downloadTrack}
+                onTogglePlay={togglePreview}
               />
             ))}
           </div>
@@ -309,6 +358,9 @@ export default function AlbumEditor() {
               {zipping ? 'Generando ZIP…' : 'Descargar álbum (ZIP)'}
             </button>
           </div>
+
+          {/* Reproductor compartido para la preview; oculto y sin controles. */}
+          <audio ref={audioRef} onEnded={stopPreview} className="hidden" />
         </>
       )}
     </>
