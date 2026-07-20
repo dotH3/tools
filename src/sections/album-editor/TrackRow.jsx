@@ -14,17 +14,38 @@ function GripIcon() {
   );
 }
 
+// Triángulo de "reproducir".
+function PlayIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M4 2.5v11l9-5.5z" />
+    </svg>
+  );
+}
+
+// Dos barras de "pausar".
+function PauseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <rect x="4" y="2.5" width="3" height="11" rx="1" />
+      <rect x="9" y="2.5" width="3" height="11" rx="1" />
+    </svg>
+  );
+}
+
 // Una pista dentro del álbum: asa para arrastrar, número, título/artista
 // editables y una vista previa del nombre de archivo resultante.
 export default function TrackRow({
   track,
   index,
   previewName,
+  playing,
   dragging,
   dragHandleProps,
   onChange,
   onRemove,
   onDownload,
+  onTogglePlay,
 }) {
   return (
     <div className={`track-item${dragging ? ' dragging' : ''}`} data-row-id={track.id}>
@@ -57,6 +78,15 @@ export default function TrackRow({
         </div>
 
         <div className="track-actions">
+          <button
+            className={`mini-btn play-btn${playing ? ' playing' : ''}`}
+            title={playing ? 'Pausar preview' : 'Escuchar preview'}
+            aria-label={playing ? 'Pausar preview' : 'Escuchar preview'}
+            aria-pressed={playing}
+            onClick={() => onTogglePlay(track)}
+          >
+            {playing ? <PauseIcon /> : <PlayIcon />}
+          </button>
           <button className="mini-btn" title="Descargar pista" onClick={() => onDownload(track)}>
             Descargar
           </button>
