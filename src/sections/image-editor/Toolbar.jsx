@@ -1,9 +1,9 @@
-import { Crop, Undo2, Trash2, ImagePlus, Download } from 'lucide-react';
+import { Move, Crop, Undo2, Trash2, ImagePlus, Download } from 'lucide-react';
 import { DRAW_TOOLS } from './shapes.js';
 
 /**
- * Barra superior del editor: a la izquierda las herramientas (recortar y
- * dibujar, todas juntas); a la derecha las acciones sobre la imagen
+ * Barra superior del editor: a la izquierda las herramientas (mover, recortar
+ * y dibujar, todas juntas); a la derecha las acciones sobre la imagen
  * (deshacer, restablecer, cambiar imagen y descargar).
  */
 export default function Toolbar({
@@ -20,6 +20,15 @@ export default function Toolbar({
   return (
     <div className="editor-toolbar">
       <div className="tool-group">
+        <button
+          className={`icon-btn${tool === 'select' ? ' active' : ''}`}
+          onClick={() => onTool('select')}
+          disabled={!ready}
+          title="Mover / redimensionar"
+          aria-label="Mover / redimensionar"
+        >
+          <Move size={20} />
+        </button>
         <button
           className={`icon-btn${tool === 'crop' ? ' active' : ''}`}
           onClick={() => onTool('crop')}

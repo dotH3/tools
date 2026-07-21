@@ -340,6 +340,16 @@ td {
 .crop-handle.e { cursor: ew-resize; }
 .crop-handle.w { cursor: ew-resize; }
 
+/* Recuadro de la forma seleccionada (mover / redimensionar). */
+.shape-sel {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed #2563eb;
+  outline: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(37, 99, 235, 0.06);
+  cursor: move;
+}
+
 /* Panel de opciones contextual (según la herramienta activa). */
 .tool-options {
   display: flex;

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import Toolbar from './Toolbar.jsx';
 import ToolOptions from './ToolOptions.jsx';
-import { drawShape, hasSize } from './shapes.js';
+import { drawShape, hasSize, shapeBBox, mapShape, hitShape } from './shapes.js';
 import { extForMime, extFromMime, canvasToBlob } from '../../lib/image.js';
 import { triggerDownload } from '../../lib/file.js';
 
-// Manijas de redimensión del recorte y su posición relativa (0..1).
+// Manijas de redimensión y su posición relativa (0..1) dentro del recuadro.
 const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 const HANDLE_POS = {
   nw: [0, 0], n: [0.5, 0], ne: [1, 0], e: [1, 0.5],
@@ -27,60 +27,94 @@ function rectFrom(a, b) {
   };
 }
 
+// Caja en px reales normalizada (ancho/alto mínimo de 1px) a partir de bordes.
+function boxFromEdges(x0, y0, x1, y1) {
+  return {
+    x: Math.min(x0, x1),
+    y: Math.min(y0, y1),
+    w: Math.max(Math.abs(x1 - x0), 1),
+    h: Math.max(Math.abs(y1 - y0), 1),
+  };
+}
+
+// Escala una forma desde su caja original (ob) a la nueva (nb).
+function scaleShape(s, ob, nb) {
+  const sx = ob.w ? nb.w / ob.w : 0;
+  const sy = ob.h ? nb.h / ob.h : 0;
+  return mapShape(s, (p) => ({ x: nb.x + (p.x - ob.x) * sx, y: nb.y + (p.y - ob.y) * sy }));
+}
+
 /**
  * Editor de imágenes unificado. El recorte y el dibujo son herramientas de un
- * mismo lienzo: comparten el historial (deshacer / restablecer) y una sola
- * descarga. Cada recorte o trazo se «cuece» en un nuevo estado del historial,
- * por lo que deshacer funciona igual para todo.
+ * mismo lienzo. Cada estado del historial es un documento { base, shapes }:
+ *   base   → canvas raster (imagen + lo ya «aplanado» por recortes)
+ *   shapes → formas vectoriales encima, que se pueden seleccionar, mover y
+ *            redimensionar hasta que se recorta o se descarga.
+ * Recortar aplana las formas y recorta; descargar aplana para exportar.
  */
 export default function Editor({ file, url, onChangeImage }) {
   const stageRef = useRef(null);
   const canvasRef = useRef(null); // lienzo visible
-  const historyRef = useRef([]); // pila de canvas (cada uno a resolución real)
+  const historyRef = useRef([]); // pila de documentos { base, shapes }
   const draftRef = useRef(null); // forma de dibujo en curso
-  const dragRef = useRef(null); // arrastre de recorte en curso
+  const cropDragRef = useRef(null); // arrastre de recorte en curso
+  const editDragRef = useRef(null); // arrastre de mover/redimensionar en curso
+  const liveRef = useRef(null); // forma editada en vivo (espejo de `live`)
+  const idRef = useRef(0);
 
   const [ready, setReady] = useState(false);
   const [step, setStep] = useState(0); // largo del historial, fuerza re-render
   const [dims, setDims] = useState(null); // { w, h } de la imagen actual
 
-  const [tool, setTool] = useState('crop');
+  const [tool, setTool] = useState('select');
   const [color, setColor] = useState('#ff3b30');
   const [useFill, setUseFill] = useState(false);
   const [lineWidth, setLineWidth] = useState(6);
-  const [sel, setSel] = useState(DEFAULT_SEL);
+  const [sel, setSel] = useState(DEFAULT_SEL); // selección de recorte
   const [busy, setBusy] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
+  const [live, setLive] = useState(null); // forma en edición (mover/escalar)
 
   const isCrop = tool === 'crop';
+  const isSelect = tool === 'select';
   const current = () => historyRef.current[historyRef.current.length - 1];
 
-  // Redibuja el lienzo visible con el estado actual + el borrador en curso.
+  // Forma seleccionada (la versión en vivo mientras se arrastra).
+  const doc = current();
+  const committedSel = doc ? doc.shapes.find((s) => s.id === selectedId) : null;
+  const selShape = live && live.id === selectedId ? live : committedSel;
+
+  // Redibuja el lienzo con la base, las formas (con la editada en vivo) y el borrador.
   function render() {
     const view = canvasRef.current;
-    const src = current();
-    if (!view || !src) return;
-    if (view.width !== src.width || view.height !== src.height) {
-      view.width = src.width;
-      view.height = src.height;
+    const st = current();
+    if (!view || !st) return;
+    const { base, shapes } = st;
+    if (view.width !== base.width || view.height !== base.height) {
+      view.width = base.width;
+      view.height = base.height;
     }
     const ctx = view.getContext('2d');
     ctx.clearRect(0, 0, view.width, view.height);
-    ctx.drawImage(src, 0, 0);
+    ctx.drawImage(base, 0, 0);
+    const l = liveRef.current;
+    for (const s of shapes) drawShape(ctx, l && s.id === l.id ? l : s);
     if (draftRef.current) drawShape(ctx, draftRef.current);
   }
 
-  // Carga la imagen original como primer estado del historial.
+  // Carga la imagen original como primer documento del historial.
   useEffect(() => {
     setReady(false);
     const img = new Image();
     img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = img.naturalWidth;
-      c.height = img.naturalHeight;
-      c.getContext('2d').drawImage(img, 0, 0);
-      historyRef.current = [c];
-      setDims({ w: c.width, h: c.height });
+      const base = document.createElement('canvas');
+      base.width = img.naturalWidth;
+      base.height = img.naturalHeight;
+      base.getContext('2d').drawImage(img, 0, 0);
+      historyRef.current = [{ base, shapes: [] }];
+      setDims({ w: base.width, h: base.height });
       setSel(DEFAULT_SEL);
+      setSelectedId(null);
       setStep(1);
       setReady(true);
     };
@@ -90,32 +124,57 @@ export default function Editor({ file, url, onChangeImage }) {
 
   useEffect(() => {
     if (ready) render();
-  }, [step, ready]);
+  }, [step, live, ready]);
 
-  // Añade un estado nuevo al historial (tras recortar o dibujar).
-  function pushCanvas(c) {
-    historyRef.current = [...historyRef.current, c];
-    setDims({ w: c.width, h: c.height });
+  // --- Historial ---
+  function pushDoc(nextDoc) {
+    historyRef.current = [...historyRef.current, nextDoc];
+    setDims({ w: nextDoc.base.width, h: nextDoc.base.height });
     setStep(historyRef.current.length);
+  }
+
+  function commitShapes(shapes) {
+    pushDoc({ base: current().base, shapes });
   }
 
   function undo() {
     if (historyRef.current.length <= 1) return;
     historyRef.current = historyRef.current.slice(0, -1);
-    const c = current();
-    setDims({ w: c.width, h: c.height });
+    const d = current();
+    setDims({ w: d.base.width, h: d.base.height });
+    setSelectedId(null);
     setStep(historyRef.current.length);
   }
 
   function reset() {
     if (historyRef.current.length <= 1) return;
     historyRef.current = historyRef.current.slice(0, 1);
-    const c = current();
-    setDims({ w: c.width, h: c.height });
+    const d = current();
+    setDims({ w: d.base.width, h: d.base.height });
+    setSelectedId(null);
     setStep(1);
   }
 
-  // --- Dibujo (herramientas que no son recorte) ---
+  function onTool(id) {
+    setTool(id);
+    setSelectedId(null);
+    liveRef.current = null;
+    setLive(null);
+  }
+
+  // Aplana base + formas en un solo canvas (para recortar o exportar).
+  function flatten() {
+    const { base, shapes } = current();
+    const c = document.createElement('canvas');
+    c.width = base.width;
+    c.height = base.height;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(base, 0, 0);
+    for (const s of shapes) drawShape(ctx, s);
+    return c;
+  }
+
+  // --- Coordenadas en px reales de la imagen a partir de un evento ---
   function coords(e) {
     const view = canvasRef.current;
     const r = view.getBoundingClientRect();
@@ -125,6 +184,7 @@ export default function Editor({ file, url, onChangeImage }) {
     };
   }
 
+  // --- Dibujar (herramientas de forma) ---
   function onDrawMove(e) {
     const d = draftRef.current;
     if (!d) return;
@@ -143,24 +203,86 @@ export default function Editor({ file, url, onChangeImage }) {
     const d = draftRef.current;
     draftRef.current = null;
     if (d && hasSize(d)) {
-      const src = current();
-      const c = document.createElement('canvas');
-      c.width = src.width;
-      c.height = src.height;
-      const ctx = c.getContext('2d');
-      ctx.drawImage(src, 0, 0);
-      drawShape(ctx, d);
-      pushCanvas(c);
+      commitShapes([...current().shapes, d]);
     } else {
       render();
     }
   }
 
+  // --- Mover / redimensionar la forma seleccionada ---
+  function onEditMove(e) {
+    const d = editDragRef.current;
+    if (!d) return;
+    const p = coords(e);
+    let ns;
+    if (d.mode === 'move') {
+      const dx = p.x - d.start.x;
+      const dy = p.y - d.start.y;
+      ns = mapShape(d.orig, (q) => ({ x: q.x + dx, y: q.y + dy }));
+    } else {
+      const b = d.box;
+      let x0 = b.x, y0 = b.y, x1 = b.x + b.w, y1 = b.y + b.h;
+      if (d.handle.includes('w')) x0 = p.x;
+      if (d.handle.includes('e')) x1 = p.x;
+      if (d.handle.includes('n')) y0 = p.y;
+      if (d.handle.includes('s')) y1 = p.y;
+      ns = scaleShape(d.orig, b, boxFromEdges(x0, y0, x1, y1));
+    }
+    liveRef.current = ns;
+    setLive(ns);
+  }
+
+  function onEditUp() {
+    window.removeEventListener('pointermove', onEditMove);
+    window.removeEventListener('pointerup', onEditUp);
+    editDragRef.current = null;
+    const ns = liveRef.current;
+    liveRef.current = null;
+    setLive(null);
+    if (ns) commitShapes(current().shapes.map((s) => (s.id === ns.id ? ns : s)));
+  }
+
+  function startMove(shape, e) {
+    editDragRef.current = { mode: 'move', orig: shape, start: coords(e) };
+    window.addEventListener('pointermove', onEditMove);
+    window.addEventListener('pointerup', onEditUp);
+  }
+
+  function startResize(handle, e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!selShape) return;
+    editDragRef.current = { mode: 'resize', handle, orig: selShape, box: shapeBBox(selShape) };
+    window.addEventListener('pointermove', onEditMove);
+    window.addEventListener('pointerup', onEditUp);
+  }
+
+  // --- Pointer sobre el lienzo (dibujar o seleccionar según la herramienta) ---
   function onCanvasDown(e) {
     if (!ready || isCrop) return;
     e.preventDefault();
+
+    if (isSelect) {
+      const p = coords(e);
+      const shapes = current().shapes;
+      let hit = null;
+      for (let i = shapes.length - 1; i >= 0; i--) {
+        if (hitShape(shapes[i], p)) {
+          hit = shapes[i];
+          break;
+        }
+      }
+      if (hit) {
+        setSelectedId(hit.id);
+        startMove(hit, e);
+      } else {
+        setSelectedId(null);
+      }
+      return;
+    }
+
     const p = coords(e);
-    const base = { type: tool, stroke: color, fill: color, useFill, lineWidth };
+    const base = { id: ++idRef.current, type: tool, stroke: color, fill: color, useFill, lineWidth };
     draftRef.current =
       tool === 'pencil' ? { ...base, points: [p] } : { ...base, sx: p.x, sy: p.y, ex: p.x, ey: p.y };
     window.addEventListener('pointermove', onDrawMove);
@@ -177,7 +299,7 @@ export default function Editor({ file, url, onChangeImage }) {
   }
 
   function onCropMove(e) {
-    const d = dragRef.current;
+    const d = cropDragRef.current;
     if (!d) return;
     const f = fracFromEvent(e);
     if (d.mode === 'create') {
@@ -203,7 +325,7 @@ export default function Editor({ file, url, onChangeImage }) {
   }
 
   function onCropUp() {
-    dragRef.current = null;
+    cropDragRef.current = null;
     window.removeEventListener('pointermove', onCropMove);
     window.removeEventListener('pointerup', onCropUp);
   }
@@ -211,7 +333,7 @@ export default function Editor({ file, url, onChangeImage }) {
   function startCropDrag(mode, handle, e) {
     e.preventDefault();
     if (mode !== 'create') e.stopPropagation();
-    dragRef.current = { mode, handle, start: fracFromEvent(e), orig: sel };
+    cropDragRef.current = { mode, handle, start: fracFromEvent(e), orig: sel };
     window.addEventListener('pointermove', onCropMove);
     window.addEventListener('pointerup', onCropUp);
   }
@@ -221,17 +343,18 @@ export default function Editor({ file, url, onChangeImage }) {
   const hasArea = cropW >= 1 && cropH >= 1;
 
   function applyCrop() {
-    const src = current();
-    if (!src || !dims || !hasArea) return;
+    if (!dims || !hasArea) return;
     setBusy(true);
     try {
+      const flat = flatten();
       const sx = Math.round(sel.x * dims.w);
       const sy = Math.round(sel.y * dims.h);
-      const c = document.createElement('canvas');
-      c.width = cropW;
-      c.height = cropH;
-      c.getContext('2d').drawImage(src, sx, sy, cropW, cropH, 0, 0, cropW, cropH);
-      pushCanvas(c);
+      const base = document.createElement('canvas');
+      base.width = cropW;
+      base.height = cropH;
+      base.getContext('2d').drawImage(flat, sx, sy, cropW, cropH, 0, 0, cropW, cropH);
+      setSelectedId(null);
+      pushDoc({ base, shapes: [] });
       setSel(DEFAULT_SEL);
     } finally {
       setBusy(false);
@@ -239,10 +362,10 @@ export default function Editor({ file, url, onChangeImage }) {
   }
 
   async function download() {
-    const src = current();
-    if (!src) return;
+    if (!current()) return;
     setBusy(true);
     try {
+      const src = flatten();
       const type = extForMime[file.type] ? file.type : 'image/png';
       const out = document.createElement('canvas');
       out.width = src.width;
@@ -263,12 +386,15 @@ export default function Editor({ file, url, onChangeImage }) {
   }
 
   const box = (v) => `${v * 100}%`;
+  const selBox = selShape && dims ? shapeBBox(selShape) : null;
+  const showSelection = isSelect && ready && selBox;
+  const canvasCursor = isCrop ? 'default' : isSelect ? 'default' : 'crosshair';
 
   return (
     <div className="img-editor">
       <Toolbar
         tool={tool}
-        onTool={setTool}
+        onTool={onTool}
         canUndo={step > 1}
         onUndo={undo}
         onReset={reset}
@@ -284,7 +410,7 @@ export default function Editor({ file, url, onChangeImage }) {
             ref={canvasRef}
             className="editor-canvas"
             onPointerDown={onCanvasDown}
-            style={{ cursor: isCrop ? 'default' : 'crosshair' }}
+            style={{ cursor: canvasCursor }}
           />
 
           {isCrop && ready && (
@@ -307,12 +433,38 @@ export default function Editor({ file, url, onChangeImage }) {
             </>
           )}
 
+          {showSelection && (
+            <div
+              className="shape-sel"
+              style={{
+                left: box(selBox.x / dims.w),
+                top: box(selBox.y / dims.h),
+                width: box(selBox.w / dims.w),
+                height: box(selBox.h / dims.h),
+              }}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                startMove(selShape, e);
+              }}
+            >
+              {HANDLES.map((h) => (
+                <span
+                  key={h}
+                  className={`crop-handle ${h}`}
+                  style={{ left: box(HANDLE_POS[h][0]), top: box(HANDLE_POS[h][1]) }}
+                  onPointerDown={(e) => startResize(h, e)}
+                />
+              ))}
+            </div>
+          )}
+
           {!ready && <div className="editor-loading">Cargando imagen…</div>}
         </div>
       </div>
 
       <ToolOptions
         tool={tool}
+        hasSelection={!!selShape}
         color={color}
         onColor={setColor}
         lineWidth={lineWidth}

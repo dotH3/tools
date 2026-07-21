@@ -8,6 +8,7 @@ import { PALETTE, WIDTHS, FILLABLE } from './shapes.js';
  */
 export default function ToolOptions({
   tool,
+  hasSelection,
   color,
   onColor,
   lineWidth,
@@ -21,6 +22,18 @@ export default function ToolOptions({
   onFullSelection,
   busy,
 }) {
+  if (tool === 'select') {
+    return (
+      <div className="tool-options">
+        <div className="option-info">
+          {hasSelection
+            ? 'Arrastra la forma para moverla o usa las manijas para redimensionarla.'
+            : 'Toca una forma que hayas dibujado para seleccionarla y acomodarla.'}
+        </div>
+      </div>
+    );
+  }
+
   if (tool === 'crop') {
     return (
       <div className="tool-options">
