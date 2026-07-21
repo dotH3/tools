@@ -162,122 +162,30 @@ td {
   gap: 6px;
 }
 
-/* --- Editor de imágenes --- */
-.editor-bar {
+/* --- Editor de imágenes (recorte + dibujo unificados) --- */
+.editor-intro {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.img-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Barra superior: herramientas a la izquierda, acciones a la derecha. */
+.editor-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.tool-tabs {
-  display: flex;
-  gap: 4px;
-}
-
-.tool-tab {
-  padding: 6px 14px;
+  padding: 6px 8px;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 0.9rem;
-  color: #374151;
-}
-
-.tool-tab.active {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #2563eb;
-  font-weight: 600;
-}
-
-/* --- Herramienta de recorte --- */
-.crop-stage {
-  position: relative;
-  display: inline-block;
-  max-width: 100%;
-  line-height: 0;
-  user-select: none;
-  touch-action: none;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.crop-img {
-  display: block;
-  max-width: 100%;
-  max-height: 70vh;
-  width: auto;
-  height: auto;
-  -webkit-user-drag: none;
-}
-
-.crop-overlay {
-  position: absolute;
-  inset: 0;
-  cursor: crosshair;
-}
-
-.crop-sel {
-  position: absolute;
-  box-sizing: border-box;
-  border: 1px solid #fff;
-  outline: 1px solid #2563eb;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-  cursor: move;
-}
-
-.crop-handle {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  margin: -5px 0 0 -5px;
-  background: #fff;
-  border: 1px solid #2563eb;
-  border-radius: 2px;
-}
-
-.crop-handle.nw { cursor: nwse-resize; }
-.crop-handle.se { cursor: nwse-resize; }
-.crop-handle.ne { cursor: nesw-resize; }
-.crop-handle.sw { cursor: nesw-resize; }
-.crop-handle.n { cursor: ns-resize; }
-.crop-handle.s { cursor: ns-resize; }
-.crop-handle.e { cursor: ew-resize; }
-.crop-handle.w { cursor: ew-resize; }
-
-.crop-info {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin-bottom: 12px;
-}
-
-/* --- Herramienta de dibujo (estilo WhatsApp) --- */
-.draw-canvas {
-  display: block;
-  max-width: 100%;
-  max-height: 65vh;
-  width: auto;
-  height: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: crosshair;
-  touch-action: none;
-  -webkit-user-drag: none;
-}
-
-.draw-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 4px 6px;
-  margin-bottom: 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #fafafa;
 }
 
@@ -322,13 +230,176 @@ td {
   color: #2563eb;
 }
 
-.draw-bottom {
+/* Botón de descarga (y de aplicar recorte): acción primaria. */
+.editor-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  margin-left: 4px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.editor-download:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.editor-download:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Escenario del lienzo con fondo a cuadros para ver la transparencia. */
+.editor-stage-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background-color: #f3f4f6;
+  background-image:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+}
+
+.editor-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  user-select: none;
+  touch-action: none;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.editor-canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 62vh;
+  width: auto;
+  height: auto;
+  touch-action: none;
+  -webkit-user-drag: none;
+}
+
+.editor-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.4;
+  color: #9ca3af;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+/* Superposición de recorte sobre el lienzo. */
+.crop-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.crop-sel {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid #fff;
+  outline: 1px solid #2563eb;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  cursor: move;
+}
+
+.crop-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  background: #fff;
+  border: 1px solid #2563eb;
+  border-radius: 2px;
+}
+
+.crop-handle.nw { cursor: nwse-resize; }
+.crop-handle.se { cursor: nwse-resize; }
+.crop-handle.ne { cursor: nesw-resize; }
+.crop-handle.sw { cursor: nesw-resize; }
+.crop-handle.n { cursor: ns-resize; }
+.crop-handle.s { cursor: ns-resize; }
+.crop-handle.e { cursor: ew-resize; }
+.crop-handle.w { cursor: ew-resize; }
+
+/* Recuadro de la forma seleccionada (mover / redimensionar). */
+.shape-sel {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed #2563eb;
+  outline: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(37, 99, 235, 0.06);
+  cursor: move;
+}
+
+/* Panel de opciones contextual (según la herramienta activa). */
+.tool-options {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.option-info {
+  font-size: 0.88rem;
+  color: #4b5563;
+}
+
+.option-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.option-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ghost-btn {
+  padding: 7px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.ghost-btn:hover {
+  background: #f3f4f6;
+}
+
+.editor-meta {
+  font-size: 0.8rem;
+  color: #9ca3af;
 }
 
 .palette {
