@@ -2,6 +2,7 @@ import ImageConverter from './image-converter/index.jsx';
 import ImageEditor from './image-editor/index.jsx';
 import CodeEditor from './code-editor/index.jsx';
 import AlbumEditor from './album-editor/index.jsx';
+import PdfMaker from './pdf-maker/index.jsx';
 
 /**
  * Registro central de secciones de la app.
@@ -37,6 +38,11 @@ export const sections = [
     id: 'album-editor',
     label: 'Editor de álbumes',
     component: AlbumEditor,
+  },
+  {
+    id: 'pdf-maker',
+    label: 'Armar PDF',
+    component: PdfMaker,
   },
 ];
 

@@ -962,3 +962,152 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Armar PDF --- */
+.pdf-maker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.pdf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pdf-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px 16px 16px;
+  margin: 0;
+}
+
+.pdf-group legend {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  padding: 0 6px;
+}
+
+.pdf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.pdf-field:last-child {
+  margin-bottom: 0;
+}
+
+.pdf-field input[type='text'],
+.pdf-field input:not([type]),
+.pdf-field select,
+.pdf-field textarea {
+  padding: 7px 9px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  color: #1f2937;
+  font-family: inherit;
+}
+
+.pdf-field textarea {
+  resize: vertical;
+}
+
+.pdf-body-input {
+  min-height: 220px;
+  line-height: 1.5;
+}
+
+.pdf-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pdf-image-preview img {
+  max-width: 90px;
+  max-height: 90px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.pdf-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pdf-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pdf-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.pdf-error {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.pdf-download {
+  align-self: flex-start;
+}
+
+.pdf-preview {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pdf-preview-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.pdf-preview-frame {
+  width: 100%;
+  height: calc(100vh - 140px);
+  min-height: 480px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f3f4f6;
+}
+
+@media (max-width: 860px) {
+  .pdf-maker {
+    grid-template-columns: 1fr;
+  }
+  .pdf-preview {
+    position: static;
+  }
+  .pdf-preview-frame {
+    height: 70vh;
+  }
+}
